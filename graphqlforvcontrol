@@ -1,0 +1,92 @@
+# This "input" configures a global authorization rule to enable public access to
+# all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
+type Donationrecord 
+    @model 
+    @auth(
+        rules: [
+            { allow: groups, groups: ["Admin"] } ,
+            { allow: groups, groups: ["Manager"], operations: [ read] } ,
+            { allow: public, operations: [create, read] }
+
+        ]
+    ) {
+    id: ID!
+    campaignID: ID! @index(name: "byCampaignDR")
+    donorI: ID!
+    rewardcategoryID: ID! @index(name: "byRewardcategory")
+    amount: Float
+    donation_date: AWSDate
+    status: Int
+    createdAt: AWSDateTime
+    campaign: Campaign @belongsTo(fields: ["campaignID"])
+    rewardcategory: Rewardcategory @belongsTo(fields: ["rewardcategoryID"])
+}
+
+type Campaignmember 
+   @model
+    @auth(
+        rules: [
+            { allow: groups, groups: ["Admin"] } ,
+            { allow: owner }
+        ]
+    ) {
+    id: ID!
+    campaignID: ID! @index(name: "byCampaignCM")
+    donorID: ID
+    first_name: String!
+    last_name: String
+    email_address: AWSEmail
+    phone_number: AWSPhone
+    createdAt: AWSDateTime
+    campaign: Campaign @belongsTo(fields: ["campaignID"])
+}
+
+type Rewardcategory
+    @model
+    @auth(
+        rules: [
+            { allow: groups, groups: ["Admin"] },
+            { allow: owner, operations: [create, read, update]  },
+            { allow: public, operations: [read] }
+        ]
+    ) {
+    id: ID!
+    campaignID: ID! @index(name: "byCampaignRC")
+    minimum_amount: Float!
+    title: String!
+    description: String!
+    estimate_delivery: AWSDate
+    ship_to: String
+    sequence_order: Float
+    is_available: Boolean
+    createdAt: AWSDateTime
+    RCDonationrecords: [Donationrecord] @hasMany(indexName: "byRewardcategory", fields: ["id"])
+    campaign: Campaign @belongsTo(fields: ["campaignID"])
+}
+
+type Campaign
+    @model
+    @auth(
+        rules: [
+            { allow: groups, groups: ["Admin"] },
+            { allow: owner, operations: [create, read, update] },
+            { allow: public, operations: [read] }
+        ]
+    ) {
+    id: ID!
+    managerID: ID
+    name: String!
+    link_thumbnail: String!
+    description: String!
+    short_description: String!
+    start_at: AWSDateTime!
+    end_at: AWSDateTime!
+    fund_goal: Float!
+    donation_received: Float
+    link_video: AWSURL
+    donor_count: Int
+    createdAt: AWSDateTime
+    CDonationrecords: [Donationrecord] @hasMany(indexName: "byCampaignDR", fields: ["id"])
+    CCampaignmembers: [Campaignmember] @hasMany(indexName: "byCampaignCM", fields: ["id"])
+    CRewardcategories: [Rewardcategory] @hasMany(indexName: "byCampaignRC", fields: ["id"])
+}
